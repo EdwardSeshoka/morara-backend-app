@@ -1,0 +1,11 @@
+{
+  "name": "@features/wines-presentation",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./components": "./components/index.ts",
+    "./screens": "./screens/index.ts"
+  }
+}

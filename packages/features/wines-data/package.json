@@ -1,0 +1,13 @@
+{
+  "name": "@features/wines-data",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./wines-repository": "./wines-repository/index.ts",
+    "./wines-service": "./wines-service/index.ts",
+    "./wines-service-dtos": "./wines-service-dtos/index.ts",
+    "./wines-service-dto-test-doubles": "./wines-service-dto-test-doubles/index.ts"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "app": "node dist/infra/cdk/bin/app.js",
+  "context": {
+    "devAccountId": "072468084892",
+    "devRegion": "af-south-1",
+    "defaultRegion": "af-south-1",
+    "devWebDomainName": "app.dev.morara.wine",
+    "devWebCertificateArn": "arn:aws:acm:us-east-1:072468084892:certificate/b1b6af3e-54fd-4621-8b22-d17c7184547b",
+    "devWebBuildPath": "../wine-app/dist"
+  }
+}

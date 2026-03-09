@@ -1,0 +1,16 @@
+{
+  "name": "@features/wines-domain",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./wine-domain": "./wine-domain/index.ts",
+    "./wine-domain/repository": "./wine-domain/repository/index.ts",
+    "./wine-domain/usecases": "./wine-domain/usecases/index.ts",
+    "./wine-domain/WineId": "./wine-domain/WineId.ts",
+    "./wine-domain-test-doubles": "./wine-domain-test-doubles/index.ts",
+    "./wines-entities": "./wines-entities/index.ts",
+    "./wines-entities-test-doubles": "./wines-entities-test-doubles/index.ts"
+  }
+}

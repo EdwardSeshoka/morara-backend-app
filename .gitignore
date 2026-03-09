@@ -1,0 +1,7 @@
+node_modules
+dist
+cdk.out
+.cdk.context.json
+.cdk.context.json.backup
+.env
+.DS_Store
