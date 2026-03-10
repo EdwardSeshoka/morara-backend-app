@@ -22,17 +22,24 @@ export class WineStage extends Stage {
     super(scope, id, props);
 
     const environmentConfiguration = getEnvironmentConfiguration(props.appEnvironment);
+    const authStackName = `${environmentConfiguration.stackNamePrefix}-auth`;
+    const dataStackName = `${environmentConfiguration.stackNamePrefix}-data`;
+    const apiStackName = `${environmentConfiguration.stackNamePrefix}-api`;
+    const webStackName = `${environmentConfiguration.stackNamePrefix}-web`;
 
-    const auth = new AuthStack(this, `${environmentConfiguration.stackNamePrefix}-auth`, {
-      appEnvironment: props.appEnvironment
-    });
-
-    const data = new DataStack(this, `${environmentConfiguration.stackNamePrefix}-data`, {
-      appEnvironment: props.appEnvironment
-    });
-
-    new ApiStack(this, `${environmentConfiguration.stackNamePrefix}-api`, {
+    const auth = new AuthStack(this, "auth", {
       appEnvironment: props.appEnvironment,
+      stackName: authStackName
+    });
+
+    const data = new DataStack(this, "data", {
+      appEnvironment: props.appEnvironment,
+      stackName: dataStackName
+    });
+
+    new ApiStack(this, "api", {
+      appEnvironment: props.appEnvironment,
+      stackName: apiStackName,
       userPool: auth.userPool,
       userPoolClient: auth.userPoolClient,
       winesTable: data.winesTable
@@ -48,7 +55,10 @@ export class WineStage extends Stage {
         ...(props.web?.buildPath ? { webBuildPath: props.web.buildPath } : {})
       };
 
-      new WebStack(this, `${environmentConfiguration.stackNamePrefix}-web`, webStackProps);
+      new WebStack(this, "web", {
+        ...webStackProps,
+        stackName: webStackName
+      });
     }
   }
 }
