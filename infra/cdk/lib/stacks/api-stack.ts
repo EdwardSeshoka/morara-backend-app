@@ -7,10 +7,13 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { WinesRoutes } from "../../../../packages/features/wines-presentation/screens/Routes/wines.routes.js";
-import type { StageName } from "../stage-names.js";
+import {
+  getEnvironmentConfiguration,
+  type AppEnvironment
+} from "../../../../src/shared/Infrastructure/Config/index.js";
 
 export type ApiStackProps = StackProps & {
-  stageName: StageName;
+  appEnvironment: AppEnvironment;
   userPool: cognito.UserPool;
   userPoolClient: cognito.UserPoolClient;
   winesTable: dynamodb.Table;
@@ -20,8 +23,10 @@ export class ApiStack extends Stack {
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
+    const environmentConfiguration = getEnvironmentConfiguration(props.appEnvironment);
+
     const api = new apigwv2.HttpApi(this, "HttpApi", {
-      apiName: `morara-${props.stageName}-api`,
+      apiName: `${environmentConfiguration.stackNamePrefix}-api`,
       corsPreflight: {
         allowOrigins: ["*"],
         allowMethods: [
@@ -53,12 +58,13 @@ export class ApiStack extends Stack {
       handlerExportName: string
     ) => {
       return new lambda.Function(this, constructId, {
-        functionName: `morara-${props.stageName}-${functionNameSuffix}`,
+        functionName: `${environmentConfiguration.stackNamePrefix}-${functionNameSuffix}`,
         runtime,
         handler: `${handlerPrefix}.${handlerExportName}`,
         code: lambdaCode,
         environment: {
-          WINES_TABLE: props.winesTable.tableName,
+          APP_ENVIRONMENT: props.appEnvironment,
+          WINES_TABLE: props.winesTable.tableName
         },
       });
     };

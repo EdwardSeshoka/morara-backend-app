@@ -1,120 +1,140 @@
 # morara-backend-app (TypeScript)
 
-A serverless backend starter (AWS) aligned to a package-first structure:
+Serverless backend infrastructure and Lambda application code for Morara.
 
-- **packages/features**: split wine feature packages (wines-data, wines-domain, wines-presentation)
-- **packages/shared**: shared API contracts & common types (monorepo-style sharing)
-- **main/app**: app composition and Lambda entrypoints
-- **src/shared**: backend shared kernel (errors, value objects, config, observability)
-- **infra/cdk**: CDK stacks for dev/int environments
+## Project Structure
+- `main/app`: application composition and Lambda entrypoints
+- `src/shared`: shared backend configuration, infrastructure helpers, and domain utilities
+- `packages/features`: wine feature packages
+- `packages/shared`: shared contracts and common types
+- `infra/cdk`: AWS CDK application for backend deployment
 
-## Prereqs
-- Node.js 18+
-- AWS credentials configured (if deploying)
-- `npm i` (or pnpm/yarn)
+## Environment Model
+The backend now uses the same first-class deployment environments as the frontend:
 
-## Install
+- `dev`
+- `beta`
+- `production`
+
+`production` is treated only as the real production stage. Legacy CDK naming such as `int`, `uat`, `prod`, or using `production` as a stand-in for development is no longer the primary model.
+
+Centralized environment typing and resolution live under `src/shared/Infrastructure/Config/AppEnvironment.ts`, `src/shared/Infrastructure/Config/EnvironmentConfiguration.ts`, and `src/shared/Infrastructure/Config/EnvironmentResolver.ts`.
+
+## Runtime Configuration
+Lambda runtime configuration is resolved centrally. The important runtime variables are:
+
+- `APP_ENVIRONMENT` = `dev` | `beta` | `production`
+- `WINES_TABLE` = DynamoDB table name
+- `AWS_REGION` = optional region override
+
+`APP_ENVIRONMENT` is injected by CDK into every Lambda, so the runtime environment is explicit and stage-aware.
+
+## Deployment Configuration
+Deploy-time configuration supports both:
+
+- GitHub Environment scoped variables such as `ACCOUNT_ID`, `AWS_REGION`, `WEB_ENABLED`
+- Per-environment variables/context such as `DEV_ACCOUNT_ID`, `BETA_ACCOUNT_ID`, `PRODUCTION_ACCOUNT_ID`
+
+Supported deploy target selectors:
+
+- `DEPLOY_ENVIRONMENT=dev|beta|production`
+- `DEPLOY_ENVIRONMENTS=dev,beta,production`
+- `cdk.json` context keys `deployEnvironment` or `deployEnvironments`
+
+Supported per-environment context keys in `cdk.json` follow the same predictable pattern:
+
+- `devAccountId`, `betaAccountId`, `productionAccountId`
+- `devRegion`, `betaRegion`, `productionRegion`
+- `devWebEnabled`, `betaWebEnabled`, `productionWebEnabled`
+- `devWebDomainName`, `betaWebDomainName`, `productionWebDomainName`
+- `devWebHostedZoneName`, `betaWebHostedZoneName`, `productionWebHostedZoneName`
+- `devWebHostedZoneId`, `betaWebHostedZoneId`, `productionWebHostedZoneId`
+- `devWebCertificateArn`, `betaWebCertificateArn`, `productionWebCertificateArn`
+- `devWebBuildPath`, `betaWebBuildPath`, `productionWebBuildPath`
+
+`defaultRegion` remains available as a shared fallback.
+
+## Local Commands
+Install dependencies:
+
 ```bash
 npm install
 ```
 
-## Local build
+Validate and build:
+
 ```bash
+npm run lint
+npm run typecheck
+npm run test
 npm run build
 ```
 
-## CDK (optional)
-This repo includes a CDK app under `infra/cdk`.
+The current `lint` step is TypeScript-based until a dedicated linter is added. The current `test` command uses Node's built-in test runner and will stay effectively empty until backend test files are introduced.
 
-Build first:
+Deploy with CDK:
+
 ```bash
 npm run build
-```
-
-Deploy:
-```bash
 npm run cdk:deploy:dev
-npm run cdk:deploy:int
+npm run cdk:deploy:beta
+npm run cdk:deploy:production
 ```
 
-Destroy:
+Destroy with CDK:
+
 ```bash
 npm run cdk:destroy:dev
-npm run cdk:destroy:int
+npm run cdk:destroy:beta
+npm run cdk:destroy:production
 ```
 
-## Web hosting (S3 + CloudFront)
-This CDK app now includes a `morara-<stage>-web` stack for static frontend hosting.
+## GitHub Actions
+This repo is prepared for the same GitHub Environments model as the frontend:
 
-What it creates:
-- Private S3 bucket for web assets
-- CloudFront distribution (HTTPS redirect + SPA fallback to `index.html`)
-- Optional Route53 alias records for custom domain
-- Optional auto-upload from local frontend build folder
+- `dev`
+- `beta`
+- `production`
 
-Build the web app first (from sibling `wine-app` repo):
-```bash
-cd ../wine-app
-npx expo export --platform web
-```
+Workflows:
 
-Configure dev web context in `cdk.json` (example):
-```json
-{
-  "context": {
-    "devWebBuildPath": "../wine-app/dist",
-    "devWebDomainName": "app.dev.morara.wine",
-    "devWebHostedZoneName": "morara.wine",
-    "devWebHostedZoneId": "<route53_hosted_zone_id>",
-    "devWebCertificateArn": "arn:aws:acm:us-east-1:<account-id>:certificate/<id>"
-  }
-}
-```
+- `.github/workflows/pr-validation.yml`: runs on pull requests to `main` and performs install, lint, typecheck, test, and build only
+- `.github/workflows/main-environment-deploy.yml`: runs on pushes to `main` and manual dispatch, resolves a target environment, validates, and deploys the matching CDK stacks
 
-Notes:
-- `devWebCertificateArn` must be an ACM cert in `us-east-1` for CloudFront custom domains.
-- If domain/certificate are omitted, CloudFront default domain is used.
-- If `../wine-app/dist` does not exist, infra deploys but skips asset upload.
+Recommended GitHub Environment variables and secrets per environment:
 
-Deploy:
-```bash
-npm run build
-npm run cdk:deploy:dev
-```
+- Variable: `AWS_REGION`
+- Variable: `WEB_ENABLED` with default `false` unless this repo should also manage the web stack
+- Optional variables: `ACCOUNT_ID`, `WEB_DOMAIN_NAME`, `WEB_HOSTED_ZONE_NAME`, `WEB_HOSTED_ZONE_ID`, `WEB_CERTIFICATE_ARN`, `WEB_BUILD_PATH`
+- Recommended secret: `AWS_ROLE_TO_ASSUME`
+- Fallback secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
-## Public data seeding (deployment-time)
+Optional repository variable:
+
+- `DEPLOY_ENVIRONMENT` to control the default target used for push-to-`main` deploys. Allowed values are `dev`, `beta`, and `production`. If omitted, the workflow defaults to `production`.
+
+## Web Stack Notes
+The CDK app still supports an optional `morara-<environment>-web` stack. In GitHub Actions, the deploy workflow defaults `WEB_ENABLED=false` so backend deployments do not manage frontend hosting unless you opt in per GitHub Environment.
+
+If you want this repo to manage the web stack for an environment:
+
+- set `WEB_ENABLED=true`
+- provide any needed domain/certificate variables
+- make sure `WEB_BUILD_PATH` points at a built frontend bundle available to the runner
+
+## Public Data Seeding
 Public wines are seeded during deploy from local JSON files:
 
-- Stage-specific file: `infra/cdk/seeds/public-wines.<stage>.json`
-- Fallback file: `infra/cdk/seeds/public-wines.json`
+- environment-specific file: `infra/cdk/seeds/public-wines.<environment>.json`
+- fallback file: `infra/cdk/seeds/public-wines.json`
 
 Current example file:
+
 - `infra/cdk/seeds/public-wines.dev.json`
 
-JSON row format:
-```json
-{
-  "id": "frh-2",
-  "name": "La Motte Chardonnay",
-  "estate": "La Motte",
-  "vintage": 2021,
-  "year": 2021,
-  "region": "Franschhoek",
-  "location": { "area": "Franschhoek" },
-  "imageUrl": "wineBottle",
-  "description": "Creamy texture with citrus lift. Subtle oak, balanced and modern in style.",
-  "rating": { "value": 4.4, "count": 520 },
-  "price": { "amount": 320, "currency": "ZAR" },
-  "isFeatured": false
-}
-```
-
-Notes:
-- Deploy upserts rows into `PK=PUBLIC`, `SK=WINE#<id>`.
-- Removing an entry from the file will delete that seeded row on stack update.
-- If no seed file exists for the stage (or default), no public seed data is applied.
+If `infra/cdk/seeds/public-wines.beta.json` or `infra/cdk/seeds/public-wines.production.json` do not exist, the CDK app falls back to `infra/cdk/seeds/public-wines.json`. If neither exists, no public seed data is applied for that environment.
 
 ## Notes
-- DynamoDB table name is provided via Lambda env var `WINES_TABLE`.
-- Auth is assumed via API Gateway JWT authorizer (Cognito). Handlers read claims from the authorizer context.
-- Validation uses Zod. Errors are mapped to API responses in `error.middleware.ts`.
+- Lambda handlers receive the DynamoDB table name through `WINES_TABLE`.
+- Auth is handled through API Gateway JWT authorization backed by Cognito.
+- Environment-specific infrastructure lifecycle rules are centralized in the environment configuration model instead of hard-coded string comparisons across stacks.

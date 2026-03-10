@@ -7,11 +7,15 @@
   "scripts": {
     "clean": "node ./scripts/clean.mjs",
     "build": "npm run clean && tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "cdk:deploy:dev": "npx cdk deploy \"morara-dev/*\" --app \"node dist/infra/cdk/bin/app.js\"",
-    "cdk:deploy:int": "npx cdk deploy \"morara-int/*\" --app \"node dist/infra/cdk/bin/app.js\"",
-    "cdk:destroy:dev": "npx cdk destroy \"morara-dev/*\" --force --app \"node dist/infra/cdk/bin/app.js\"",
-    "cdk:destroy:int": "npx cdk destroy \"morara-int/*\" --force --app \"node dist/infra/cdk/bin/app.js\""
+    "cdk:deploy:dev": "DEPLOY_ENVIRONMENT=dev npx cdk deploy \"morara-dev/*\" --app \"node dist/infra/cdk/bin/app.js\"",
+    "cdk:deploy:beta": "DEPLOY_ENVIRONMENT=beta npx cdk deploy \"morara-beta/*\" --app \"node dist/infra/cdk/bin/app.js\"",
+    "cdk:deploy:production": "DEPLOY_ENVIRONMENT=production npx cdk deploy \"morara-production/*\" --app \"node dist/infra/cdk/bin/app.js\"",
+    "cdk:destroy:dev": "DEPLOY_ENVIRONMENT=dev npx cdk destroy \"morara-dev/*\" --force --app \"node dist/infra/cdk/bin/app.js\"",
+    "cdk:destroy:beta": "DEPLOY_ENVIRONMENT=beta npx cdk destroy \"morara-beta/*\" --force --app \"node dist/infra/cdk/bin/app.js\"",
+    "cdk:destroy:production": "DEPLOY_ENVIRONMENT=production npx cdk destroy \"morara-production/*\" --force --app \"node dist/infra/cdk/bin/app.js\""
   },
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.18.0",

@@ -6,10 +6,13 @@ import { Stack, type StackProps, RemovalPolicy } from "aws-cdk-lib";
 import * as cr from "aws-cdk-lib/custom-resources";
 import { Construct } from "constructs";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import type { StageName } from "../stage-names.js";
+import {
+  getEnvironmentConfiguration,
+  type AppEnvironment
+} from "../../../../src/shared/Infrastructure/Config/index.js";
 
 export type DataStackProps = StackProps & {
-  stageName: StageName;
+  appEnvironment: AppEnvironment;
 };
 
 type PublicSeedWine = Readonly<{
@@ -47,19 +50,23 @@ export class DataStack extends Stack {
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
 
+    const environmentConfiguration = getEnvironmentConfiguration(props.appEnvironment);
+
     this.winesTable = new dynamodb.Table(this, "WinesTable", {
-      tableName: `morara-${props.stageName}-wines`,
+      tableName: `${environmentConfiguration.stackNamePrefix}-wines`,
       partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: props.stageName === "dev" ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN
+      removalPolicy: environmentConfiguration.database.allowTeardown
+        ? RemovalPolicy.DESTROY
+        : RemovalPolicy.RETAIN
     });
 
-    this.seedPublicWinesFromJson(props.stageName);
+    this.seedPublicWinesFromJson(props.appEnvironment);
   }
 
-  private seedPublicWinesFromJson(stageName: StageName): void {
-    const seeds = loadPublicWineSeeds(stageName);
+  private seedPublicWinesFromJson(appEnvironment: AppEnvironment): void {
+    const seeds = loadPublicWineSeeds(appEnvironment);
     if (seeds.length === 0) return;
 
     const fileHash = createHash("sha256")
@@ -93,7 +100,9 @@ export class DataStack extends Stack {
           parameters: {
             RequestItems: requestItems
           },
-          physicalResourceId: cr.PhysicalResourceId.of(`seed-public-${stageName}-batch-${batchIndex}-${fileHash}`)
+          physicalResourceId: cr.PhysicalResourceId.of(
+            `seed-public-${appEnvironment}-batch-${batchIndex}-${fileHash}`
+          )
         },
         onUpdate: {
           service: "DynamoDB",
@@ -101,7 +110,9 @@ export class DataStack extends Stack {
           parameters: {
             RequestItems: requestItems
           },
-          physicalResourceId: cr.PhysicalResourceId.of(`seed-public-${stageName}-batch-${batchIndex}-${fileHash}`)
+          physicalResourceId: cr.PhysicalResourceId.of(
+            `seed-public-${appEnvironment}-batch-${batchIndex}-${fileHash}`
+          )
         },
         onDelete: {
           service: "DynamoDB",
@@ -119,9 +130,10 @@ export class DataStack extends Stack {
   }
 }
 
-function loadPublicWineSeeds(stageName: StageName): PublicSeedWine[] {
+function loadPublicWineSeeds(appEnvironment: AppEnvironment): PublicSeedWine[] {
+  const environmentConfiguration = getEnvironmentConfiguration(appEnvironment);
   const seedsDir = join(process.cwd(), "infra", "cdk", "seeds");
-  const stagePath = join(seedsDir, `public-wines.${stageName}.json`);
+  const stagePath = join(seedsDir, environmentConfiguration.database.publicSeedFileName);
   const defaultPath = join(seedsDir, "public-wines.json");
 
   let targetPath: string | null = null;

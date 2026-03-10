@@ -8,10 +8,10 @@ import { WineDynamoService } from "../../../packages/features/wines-data/wines-s
 import { WineId } from "../../../packages/features/wines-domain/wine-domain/WineId.js";
 import { getDynamoDocClient } from "../../../src/shared/Data/Dynamo/DynamoClient.js";
 import { UserId } from "../../../src/shared/Domain/ValueObjects/UserId.js";
-import { loadEnv } from "../../../src/shared/Infrastructure/Config/env.js";
+import { loadRuntimeEnvironmentConfiguration } from "../../../src/shared/Infrastructure/Config/index.js";
 
 export type AppComponents = Readonly<{
-  env: ReturnType<typeof loadEnv>;
+  env: ReturnType<typeof loadRuntimeEnvironmentConfiguration>;
   ids: {
     userId: (value: string) => UserId;
     wineId: (value: string) => WineId;
@@ -26,10 +26,10 @@ export type AppComponents = Readonly<{
 }>;
 
 export function buildAppComponents(): AppComponents {
-  const env = loadEnv();
+  const env = loadRuntimeEnvironmentConfiguration();
 
   const doc = getDynamoDocClient();
-  const wineService = new WineDynamoService(doc, env.WINES_TABLE);
+  const wineService = new WineDynamoService(doc, env.winesTable);
   const wineRepo = new WineDynamoRepository(wineService);
 
   return {

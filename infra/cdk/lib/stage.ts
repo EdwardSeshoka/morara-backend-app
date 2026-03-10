@@ -1,22 +1,19 @@
 import { Stage, type StageProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
+import {
+  getEnvironmentConfiguration,
+  type AppEnvironment,
+  type DeploymentWebConfiguration
+} from "../../../src/shared/Infrastructure/Config/index.js";
 import { ApiStack } from "./stacks/api-stack.js";
 import { AuthStack } from "./stacks/auth-stack.js";
 import { DataStack } from "./stacks/data-stack.js";
 import { WebStack } from "./stacks/web-stack.js";
-import type { StageName } from "./stage-names.js";
 
-export type WebStageConfig = Readonly<{
-  enabled?: boolean;
-  domainName?: string;
-  hostedZoneName?: string;
-  hostedZoneId?: string;
-  certificateArn?: string;
-  buildPath?: string;
-}>;
+export type WebStageConfig = DeploymentWebConfiguration;
 
 export type WineStageProps = StageProps & {
-  stageName: StageName;
+  appEnvironment: AppEnvironment;
   web?: WebStageConfig;
 };
 
@@ -24,24 +21,26 @@ export class WineStage extends Stage {
   constructor(scope: Construct, id: string, props: WineStageProps) {
     super(scope, id, props);
 
-    const auth = new AuthStack(this, `morara-${props.stageName}-auth`, {
-      stageName: props.stageName
+    const environmentConfiguration = getEnvironmentConfiguration(props.appEnvironment);
+
+    const auth = new AuthStack(this, `${environmentConfiguration.stackNamePrefix}-auth`, {
+      appEnvironment: props.appEnvironment
     });
 
-    const data = new DataStack(this, `morara-${props.stageName}-data`, {
-      stageName: props.stageName
+    const data = new DataStack(this, `${environmentConfiguration.stackNamePrefix}-data`, {
+      appEnvironment: props.appEnvironment
     });
 
-    new ApiStack(this, `morara-${props.stageName}-api`, {
-      stageName: props.stageName,
+    new ApiStack(this, `${environmentConfiguration.stackNamePrefix}-api`, {
+      appEnvironment: props.appEnvironment,
       userPool: auth.userPool,
       userPoolClient: auth.userPoolClient,
       winesTable: data.winesTable
     });
 
-    if (props.web?.enabled ?? true) {
+    if (props.web?.enabled ?? environmentConfiguration.infrastructure.webEnabledByDefault) {
       const webStackProps = {
-        stageName: props.stageName,
+        appEnvironment: props.appEnvironment,
         ...(props.web?.domainName ? { webDomainName: props.web.domainName } : {}),
         ...(props.web?.hostedZoneName ? { webHostedZoneName: props.web.hostedZoneName } : {}),
         ...(props.web?.hostedZoneId ? { webHostedZoneId: props.web.hostedZoneId } : {}),
@@ -49,7 +48,7 @@ export class WineStage extends Stage {
         ...(props.web?.buildPath ? { webBuildPath: props.web.buildPath } : {})
       };
 
-      new WebStack(this, `morara-${props.stageName}-web`, webStackProps);
+      new WebStack(this, `${environmentConfiguration.stackNamePrefix}-web`, webStackProps);
     }
   }
 }
