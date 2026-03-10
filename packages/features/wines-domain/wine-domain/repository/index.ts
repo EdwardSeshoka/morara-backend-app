@@ -1,1 +1,1 @@
-export * from "./WineRepository";
+export * from "./WineRepository.js";

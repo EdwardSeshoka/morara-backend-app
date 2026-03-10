@@ -1,1 +1,1 @@
-export * from "../../../main/app/Lambda/index";
+export * from "../../../main/app/Lambda/index.js";

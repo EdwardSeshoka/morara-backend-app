@@ -1,2 +1,2 @@
-export * from "./AppComposition";
-export * from "./buildHandler";
+export * from "./AppComposition.js";
+export * from "./buildHandler.js";

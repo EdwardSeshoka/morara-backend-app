@@ -1,3 +1,3 @@
-export * from "./repository";
-export * from "./usecases";
-export * from "./WineId";
+export * from "./repository/index.js";
+export * from "./usecases/index.js";
+export * from "./WineId.js";

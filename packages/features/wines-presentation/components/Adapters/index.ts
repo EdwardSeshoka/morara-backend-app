@@ -1,2 +1,2 @@
-export * from "./apiGatewayEvent";
-export * from "./response";
+export * from "./apiGatewayEvent.js";
+export * from "./response.js";

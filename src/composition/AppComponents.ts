@@ -1,1 +1,1 @@
-export * from "../../main/app/Composition/AppComposition";
+export * from "../../main/app/Composition/AppComposition.js";
