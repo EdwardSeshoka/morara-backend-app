@@ -9,10 +9,13 @@ import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import { Construct } from "constructs";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import type { StageName } from "../stage-names.js";
+import {
+  getEnvironmentConfiguration,
+  type AppEnvironment
+} from "../../../../src/shared/Infrastructure/Config/index.js";
 
 export type WebStackProps = StackProps & {
-  stageName: StageName;
+  appEnvironment: AppEnvironment;
   webDomainName?: string;
   webHostedZoneName?: string;
   webHostedZoneId?: string;
@@ -24,13 +27,17 @@ export class WebStack extends Stack {
   constructor(scope: Construct, id: string, props: WebStackProps) {
     super(scope, id, props);
 
+    const environmentConfiguration = getEnvironmentConfiguration(props.appEnvironment);
+
     const websiteBucket = new s3.Bucket(this, "WebsiteBucket", {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
-      removalPolicy: props.stageName === "dev" ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN,
-      autoDeleteObjects: props.stageName === "dev"
+      removalPolicy: environmentConfiguration.infrastructure.allowDestructiveChanges
+        ? RemovalPolicy.DESTROY
+        : RemovalPolicy.RETAIN,
+      autoDeleteObjects: environmentConfiguration.infrastructure.allowDestructiveChanges
     });
 
     const domainName = props.webDomainName?.trim() || undefined;
@@ -42,7 +49,7 @@ export class WebStack extends Stack {
     if (domainName) {
       if (!certificateArn) {
         throw new Error(
-          `Custom web domain '${domainName}' requires a us-east-1 ACM certificate ARN. Set ${props.stageName}WebCertificateArn in cdk.json context.`
+          `Custom web domain '${domainName}' requires a us-east-1 ACM certificate ARN. Set ${props.appEnvironment}WebCertificateArn in cdk.json context.`
         );
       }
 
@@ -62,7 +69,7 @@ function handler(event) {
     });
 
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
-      comment: `morara-${props.stageName}-web`,
+      comment: `${environmentConfiguration.stackNamePrefix}-web`,
       defaultRootObject: "index.html",
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       ...(domainName && certificate
@@ -100,7 +107,8 @@ function handler(event) {
       ]
     });
 
-    const buildPath = props.webBuildPath?.trim() || "../wine-app/dist";
+    const buildPath =
+      props.webBuildPath?.trim() || environmentConfiguration.infrastructure.defaultWebBuildPath;
     const resolvedBuildPath = resolve(process.cwd(), buildPath);
 
     if (existsSync(resolvedBuildPath)) {

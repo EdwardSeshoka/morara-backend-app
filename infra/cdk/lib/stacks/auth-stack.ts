@@ -1,10 +1,13 @@
 import { Stack, type StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as cognito from "aws-cdk-lib/aws-cognito";
-import type { StageName } from "../stage-names.js";
+import {
+  getEnvironmentConfiguration,
+  type AppEnvironment
+} from "../../../../src/shared/Infrastructure/Config/index.js";
 
 export type AuthStackProps = StackProps & {
-  stageName: StageName;
+  appEnvironment: AppEnvironment;
 };
 
 export class AuthStack extends Stack {
@@ -14,8 +17,10 @@ export class AuthStack extends Stack {
   constructor(scope: Construct, id: string, props: AuthStackProps) {
     super(scope, id, props);
 
+    const environmentConfiguration = getEnvironmentConfiguration(props.appEnvironment);
+
     this.userPool = new cognito.UserPool(this, "UserPool", {
-      userPoolName: `morara-${props.stageName}-users`,
+      userPoolName: `${environmentConfiguration.stackNamePrefix}-users`,
       signInAliases: { email: true },
       selfSignUpEnabled: true
     });
