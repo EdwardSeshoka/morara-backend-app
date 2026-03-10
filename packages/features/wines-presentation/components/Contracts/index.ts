@@ -1,1 +1,1 @@
-export * from "./JwtClaims";
+export * from "./JwtClaims.js";

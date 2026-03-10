@@ -1,3 +1,3 @@
-export * from "./schema";
-export * from "./WineDto";
-export * from "./wineDto.serializer";
+export * from "./schema.js";
+export * from "./WineDto.js";
+export * from "./wineDto.serializer.js";

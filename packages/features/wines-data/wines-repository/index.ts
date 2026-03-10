@@ -1,2 +1,2 @@
-export * from "./WineDynamoRepository";
-export * from "./wineEntity.mapper";
+export * from "./WineDynamoRepository.js";
+export * from "./wineEntity.mapper.js";

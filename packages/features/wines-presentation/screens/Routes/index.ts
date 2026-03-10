@@ -1,1 +1,1 @@
-export * from "./wines.routes";
+export * from "./wines.routes.js";

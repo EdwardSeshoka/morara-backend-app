@@ -1,1 +1,1 @@
-export * from "./DynamoClient";
+export * from "./DynamoClient.js";

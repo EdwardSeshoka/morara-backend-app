@@ -1,4 +1,4 @@
-export * as SharedApplication from "./Application";
-export * as SharedData from "./Data";
-export * as SharedDomain from "./Domain";
-export * as SharedInfrastructure from "./Infrastructure";
+export * as SharedApplication from "./Application/index.js";
+export * as SharedData from "./Data/index.js";
+export * as SharedDomain from "./Domain/index.js";
+export * as SharedInfrastructure from "./Infrastructure/index.js";

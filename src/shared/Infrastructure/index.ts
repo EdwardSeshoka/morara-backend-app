@@ -1,2 +1,2 @@
-export * from "./Config";
-export * from "./Observability";
+export * from "./Config/index.js";
+export * from "./Observability/index.js";

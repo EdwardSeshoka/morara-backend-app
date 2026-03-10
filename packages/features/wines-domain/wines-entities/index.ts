@@ -1,2 +1,2 @@
-export * from "./Wine";
-export * from "./WineCollection";
+export * from "./Wine.js";
+export * from "./WineCollection.js";

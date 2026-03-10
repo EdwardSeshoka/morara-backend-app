@@ -1,2 +1,2 @@
-export * from "./Composition";
-export * from "./Lambda";
+export * from "./Composition/index.js";
+export * from "./Lambda/index.js";

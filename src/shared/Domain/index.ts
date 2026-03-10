@@ -1,1 +1,1 @@
-export * from "./ValueObjects";
+export * from "./ValueObjects/index.js";
